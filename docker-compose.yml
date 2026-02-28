@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  vlm-api:
+    build: .
+    container_name: logistics-vlm
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount current directory so code changes update without rebuilding
+      - ./:/app
+      # Persist Hugging Face models so they don't re-download every restart
+      - hf_cache:/root/.cache/huggingface
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  hf_cache:

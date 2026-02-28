@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logistics VLM: Temporal Intelligence</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --border: #334155;
+            --success: #10b981;
+            --code-bg: #0d1117;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 { margin: 0; font-weight: 700; letter-spacing: -1px; }
+        p.subtitle { color: var(--text-secondary); margin-top: 5px; }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Upload Zone */
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: var(--accent);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .upload-zone input[type="file"] {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .icon { font-size: 32px; margin-bottom: 10px; display: block; }
+
+        /* Video Preview */
+        #video-preview-container {
+            display: none; /* Hidden by default */
+            margin-top: 20px;
+        }
+
+        video {
+            width: 100%;
+            border-radius: 8px;
+            background: #000;
+            max-height: 400px;
+        }
+
+        /* Buttons */
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: background 0.2s;
+            font-size: 16px;
+        }
+
+        .btn:hover { background: var(--accent-hover); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Results Area */
+        #results-area {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .metric-box {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .metric-label { font-size: 0.85rem; color: var(--text-secondary); display: block; margin-bottom: 5px; }
+        .metric-value { font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+
+        pre {
+            background: var(--code-bg);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            color: #e2e8f0;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+        }
+
+        /* Loading Spinner */
+        .loader {
+            display: none;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            border-top: 3px solid var(--accent);
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Logistics VLM Intelligence</h1>
+            <p class="subtitle">Temporal Operation Detection & Anticipation</p>
+        </header>
+
+        <div class="card">
+            <!-- Upload Section -->
+            <div class="upload-zone" id="drop-zone">
+                <span class="icon">📹</span>
+                <p><strong>Drag & drop video here</strong><br>or click to upload (MP4, AVI)</p>
+                <input type="file" id="file-input" accept="video/*">
+            </div>
+
+            <!-- Video Preview -->
+            <div id="video-preview-container">
+                <p class="metric-label">Input Video (Simulating Warehouse Stream)</p>
+                <video id="video-player" controls></video>
+                <button id="analyze-btn" class="btn">Analyze Temporal Sequence</button>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loader" class="loader"></div>
+
+            <!-- Results Section -->
+            <div id="results-area">
+                <h3 style="margin-top:0;">Model Prediction</h3>
+                
+                <!-- Key Metrics Visualization -->
+                <div class="metrics-grid">
+                    <div class="metric-box">
+                        <span class="metric-label">Dominant Operation</span>
+                        <span class="metric-value" id="res-operation">--</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Confidence</span>
+                        <span class="metric-value" id="res-confidence">--</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label">Next Action (Anticipation)</span>
+                        <span class="metric-value" style="color: var(--success);" id="res-next">--</span>
+                    </div>
+                </div>
+
+                <!-- Raw JSON Output -->
+                <p class="metric-label">Raw JSON Output</p>
+                <pre id="json-output"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const dropZone = document.getElementById('drop-zone');
+        const videoContainer = document.getElementById('video-preview-container');
+        const videoPlayer = document.getElementById('video-player');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const loader = document.getElementById('loader');
+        const resultsArea = document.getElementById('results-area');
+        const jsonOutput = document.getElementById('json-output');
+
+        // 1. Handle File Selection
+        fileInput.addEventListener('change', handleFileSelect);
+
+        // Drag and Drop Visuals
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            fileInput.files = e.dataTransfer.files;
+            handleFileSelect();
+        });
+
+        function handleFileSelect() {
+            const file = fileInput.files[0];
+            if (file) {
+                // Show video preview
+                const url = URL.createObjectURL(file);
+                videoPlayer.src = url;
+                videoContainer.style.display = 'block';
+                resultsArea.style.display = 'none'; // Hide old results
+            }
+        }
+
+        // 2. Handle API Call
+        analyzeBtn.addEventListener('click', async () => {
+            const file = fileInput.files[0];
+            if (!file) return alert("Please select a video first.");
+
+            // UI State: Loading
+            analyzeBtn.disabled = true;
+            analyzeBtn.innerText = "Processing Video Frames...";
+            loader.style.display = 'block';
+            resultsArea.style.display = 'none';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                // NOTE: Assumes your FastAPI backend is running on localhost:8000
+                const response = await fetch('http://localhost:8000/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error(`Server Error: ${response.statusText}`);
+
+                const data = await response.json();
+                
+                // UI State: Success
+                displayResults(data);
+
+            } catch (error) {
+                console.error(error);
+                jsonOutput.textContent = "Error: " + error.message;
+                resultsArea.style.display = 'block';
+            } finally {
+                // Reset UI
+                analyzeBtn.disabled = false;
+                analyzeBtn.innerText = "Analyze Temporal Sequence";
+                loader.style.display = 'none';
+            }
+        });
+
+        function displayResults(data) {
+            resultsArea.style.display = 'block';
+            
+            // Populate Metric Boxes (Safe access with optional chaining)
+            document.getElementById('res-operation').textContent = data.dominant_operation || "Unknown";
+            document.getElementById('res-confidence').textContent = data.confidence ? (data.confidence * 100).toFixed(1) + '%' : "N/A";
+            document.getElementById('res-next').textContent = data.anticipated_next_operation || "None";
+
+            // Populate JSON Block
+            jsonOutput.textContent = JSON.stringify(data, null, 2);
+
+            // Optional: Jump video to start frame if available
+            if (data.temporal_segment && data.temporal_segment.start_frame) {
+                // Assuming 30fps roughly - this is an estimation for UI niceness
+                // In production, backend should send start_time_seconds
+                const fps = 30; 
+                videoPlayer.currentTime = data.temporal_segment.start_frame / fps;
+            }
+        }
+    </script>
+</body>
+</html>

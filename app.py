@@ -8,6 +8,7 @@ import os
 from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
 import torch
 from qwen_vl_utils import process_vision_info
+from peft import PeftModel
 
 app = FastAPI()
 
@@ -23,6 +24,9 @@ model = Qwen2VLForConditionalGeneration.from_pretrained(
 
 processor = AutoProcessor.from_pretrained("Qwen/Qwen2-VL-2B-Instruct")
 
+adapter = "./output_qwen_lora/final_adapter"
+
+model = PeftModel.from_pretrained(model, adapter, device_map="auto", torch_dtype=torch.float16 if device == "cuda" else "auto")
 print("Model loaded successfully")
 
 def clean_json_output(text: str):

@@ -8,3 +8,6 @@ qwen-vl-utils
 decord
 pillow
 numpy
+pandas
+openpack-toolkit
+tqdm

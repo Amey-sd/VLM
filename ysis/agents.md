@@ -57,7 +57,7 @@
 
 ### Phase 3: Fine-Tuning & Adaptive Data Pipeline
 
-*   **Tool Used:** Cursor (Claude 3.5 Sonnet)
+*   **Tool Used:** Google Gemini 3 Pro
 *   **Exact Prompt:**
     > **Context:** I am fine-tuning `Qwen2-VL-2B` on a logistics dataset using free-tier GPUs (T4 16GB).
     >

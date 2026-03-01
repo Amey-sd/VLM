@@ -52,6 +52,25 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        select {
+            background: var(--bg-color);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
         /* Upload Zone */
         .upload-zone {
             border: 2px dashed var(--border);
@@ -82,7 +101,7 @@
 
         /* Video Preview */
         #video-preview-container {
-            display: none; /* Hidden by default */
+            display: none;
             margin-top: 20px;
         }
 
@@ -145,7 +164,6 @@
             font-size: 0.9rem;
         }
 
-        /* Loading Spinner */
         .loader {
             display: none;
             border: 3px solid rgba(255,255,255,0.1);
@@ -170,28 +188,31 @@
         </header>
 
         <div class="card">
-            <!-- Upload Section -->
+            <!-- Model Selection -->
+            <div class="controls">
+                <label for="model-selector" style="color: var(--text-secondary);">Inference Engine:</label>
+                <select id="model-selector">
+                    <option value="finetuned">Fine-Tuned (Qwen2-VL + LoRA)</option>
+                    <option value="base">Base Model (Qwen2-VL Zero-Shot)</option>
+                </select>
+            </div>
+
             <div class="upload-zone" id="drop-zone">
                 <span class="icon">📹</span>
                 <p><strong>Drag & drop video here</strong><br>or click to upload (MP4, AVI)</p>
                 <input type="file" id="file-input" accept="video/*">
             </div>
 
-            <!-- Video Preview -->
             <div id="video-preview-container">
-                <p class="metric-label">Input Video (Simulating Warehouse Stream)</p>
+                <p class="metric-label">Input Video Stream</p>
                 <video id="video-player" controls></video>
                 <button id="analyze-btn" class="btn">Analyze Temporal Sequence</button>
             </div>
 
-            <!-- Loading State -->
             <div id="loader" class="loader"></div>
 
-            <!-- Results Section -->
             <div id="results-area">
                 <h3 style="margin-top:0;">Model Prediction</h3>
-                
-                <!-- Key Metrics Visualization -->
                 <div class="metrics-grid">
                     <div class="metric-box">
                         <span class="metric-label">Dominant Operation</span>
@@ -206,8 +227,6 @@
                         <span class="metric-value" style="color: var(--success);" id="res-next">--</span>
                     </div>
                 </div>
-
-                <!-- Raw JSON Output -->
                 <p class="metric-label">Raw JSON Output</p>
                 <pre id="json-output"></pre>
             </div>
@@ -223,15 +242,10 @@
         const loader = document.getElementById('loader');
         const resultsArea = document.getElementById('results-area');
         const jsonOutput = document.getElementById('json-output');
+        const modelSelector = document.getElementById('model-selector');
 
-        // 1. Handle File Selection
         fileInput.addEventListener('change', handleFileSelect);
-
-        // Drag and Drop Visuals
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('dragover');
-        });
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
         dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
         dropZone.addEventListener('drop', (e) => {
             e.preventDefault();
@@ -243,20 +257,17 @@
         function handleFileSelect() {
             const file = fileInput.files[0];
             if (file) {
-                // Show video preview
                 const url = URL.createObjectURL(file);
                 videoPlayer.src = url;
                 videoContainer.style.display = 'block';
-                resultsArea.style.display = 'none'; // Hide old results
+                resultsArea.style.display = 'none';
             }
         }
 
-        // 2. Handle API Call
         analyzeBtn.addEventListener('click', async () => {
             const file = fileInput.files[0];
             if (!file) return alert("Please select a video first.");
 
-            // UI State: Loading
             analyzeBtn.disabled = true;
             analyzeBtn.innerText = "Processing Video Frames...";
             loader.style.display = 'block';
@@ -264,19 +275,17 @@
 
             const formData = new FormData();
             formData.append('file', file);
+            // SEND THE SELECTED MODEL TYPE
+            formData.append('model_type', modelSelector.value); 
 
             try {
-                // NOTE: Assumes your FastAPI backend is running on localhost:8000
                 const response = await fetch('http://localhost:8000/predict', {
                     method: 'POST',
                     body: formData
                 });
 
                 if (!response.ok) throw new Error(`Server Error: ${response.statusText}`);
-
                 const data = await response.json();
-                
-                // UI State: Success
                 displayResults(data);
 
             } catch (error) {
@@ -284,7 +293,6 @@
                 jsonOutput.textContent = "Error: " + error.message;
                 resultsArea.style.display = 'block';
             } finally {
-                // Reset UI
                 analyzeBtn.disabled = false;
                 analyzeBtn.innerText = "Analyze Temporal Sequence";
                 loader.style.display = 'none';
@@ -293,21 +301,12 @@
 
         function displayResults(data) {
             resultsArea.style.display = 'block';
-            
-            // Populate Metric Boxes (Safe access with optional chaining)
             document.getElementById('res-operation').textContent = data.dominant_operation || "Unknown";
             document.getElementById('res-confidence').textContent = data.confidence ? (data.confidence * 100).toFixed(1) + '%' : "N/A";
             document.getElementById('res-next').textContent = data.anticipated_next_operation || "None";
-
-            // Populate JSON Block
             jsonOutput.textContent = JSON.stringify(data, null, 2);
-
-            // Optional: Jump video to start frame if available
             if (data.temporal_segment && data.temporal_segment.start_frame) {
-                // Assuming 30fps roughly - this is an estimation for UI niceness
-                // In production, backend should send start_time_seconds
-                const fps = 30; 
-                videoPlayer.currentTime = data.temporal_segment.start_frame / fps;
+                videoPlayer.currentTime = data.temporal_segment.start_frame / 30;
             }
         }
     </script>

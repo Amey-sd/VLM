@@ -11,3 +11,6 @@ numpy
 pandas
 openpack-toolkit
 tqdm
+peft
+trl
+bitsandbytes

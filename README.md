@@ -75,7 +75,7 @@ We compared the Zero-Shot Base Model against the LoRA Fine-Tuned Model on held-o
 ```text
 /
 ├── app.py                   # FastAPI Backend with PEFT switching
-├── home.html                # Frontend UI
+├── templates/home.html                # Frontend UI
 ├── data_pipeline.py         # Skeleton rendering & Motion sampling
 ├── train.py                 # QLoRA Training script
 ├── evaluate.py              # Evaluation metrics script
